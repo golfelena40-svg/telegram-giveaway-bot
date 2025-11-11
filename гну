@@ -7,7 +7,7 @@ from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
 # === Настройки ===
 TOKEN = "8111521634:AAGLyLy4EHL3ZiZfaaWQ5tEoDWEuw-_CKgM"
 CHANNEL_USERNAME = "@plemyagnu"  # канал студии
-ADMIN_ID = @amelkina.g  # замени на свой Telegram ID
+ADMIN_ID = 1019688392  # замени на свой Telegram ID
 USERS_FILE = "users.json"
 
 bot = Bot(token=TOKEN)
