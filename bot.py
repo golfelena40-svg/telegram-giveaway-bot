@@ -1,0 +1,80 @@
+import json
+import random
+from aiogram import Bot, Dispatcher, types
+from aiogram.utils import executor
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton
+
+# === 🔑 Настройки (сюда вставь свои данные!) ===
+TOKEN = "8111521634:AAGLyLy4EHL3ZiZfaaWQ5tEoDWEuw-_CKgM"  # 👈 сюда вставь токен из BotFather
+CHANNEL_USERNAME = "@plemyagnu"     # 👈 сюда вставь свой канал
+ADMIN_ID = 1019688392               # 👈 сюда вставь свой Telegram ID
+USERS_FILE = "users.json"
+
+bot = Bot(token=TOKEN)
+dp = Dispatcher(bot)
+
+def load_users():
+    try:
+        with open(USERS_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_users(users):
+    with open(USERS_FILE, "w", encoding="utf-8") as f:
+        json.dump(users, f, ensure_ascii=False, indent=2)
+
+@dp.message_handler(commands=["start"])
+async def start(message: types.Message):
+    kb = InlineKeyboardMarkup(row_width=1)
+    kb.add(
+        InlineKeyboardButton("📲 Подписаться на канал", url="https://t.me/plemyagnu"),
+        InlineKeyboardButton("✅ Проверить подписку и участвовать", callback_data="check")
+    )
+    text = (
+        "🏋️‍♀️ Привет! Это розыгрыш от студии <b>Племя ГНУ</b>!\n\n"
+        "🎁 Приз — месяц безлимитных тренировок!\n\n"
+        "Чтобы участвовать:\n"
+        "1️⃣ Подпишись на канал {ch}\n"
+        "2️⃣ Нажми кнопку ниже, чтобы проверить подписку 👇"
+    ).format(ch=CHANNEL_USERNAME)
+    await message.answer(text, parse_mode="HTML", reply_markup=kb)
+
+@dp.callback_query_handler(lambda c: c.data == "check")
+async def check(callback: types.CallbackQuery):
+    user_id = callback.from_user.id
+    try:
+        member = await bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        if member.status in ["member", "administrator", "creator"]:
+            users = load_users()
+            if user_id not in users:
+                users.append(user_id)
+                save_users(users)
+                await callback.message.answer("✅ Отлично! Ты участвуешь в розыгрыше 🎉")
+            else:
+                await callback.message.answer("⚠️ Ты уже участвуешь 😉")
+        else:
+            await callback.message.answer("❌ Сначала подпишись на канал @plemyagnu.")
+    except:
+        await callback.message.answer("⚠️ Ошибка проверки. Попробуй позже.")
+
+@dp.message_handler(commands=["draw"])
+async def draw(message: types.Message):
+    if message.from_user.id != ADMIN_ID:
+        await message.answer("🚫 Только администратор может выбрать победителя.")
+        return
+
+    users = load_users()
+    if not users:
+        await message.answer("❌ Участников пока нет.")
+        return
+
+    winner = random.choice(users)
+    await message.answer(
+        f"🏆 Победитель: <a href='tg://user?id={winner}'>Поздравляем!</a>\n\n"
+        "🎁 Ты выиграл месяц безлимитных тренировок в <b>Племя ГНУ</b>!",
+        parse_mode="HTML"
+    )
+
+if __name__ == "__main__":
+    executor.start_polling(dp, skip_updates=True)
